@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Gold Platform Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+        h1 { color: #b3a016; text-align: center; }
+        .data-section { background-color: #e8e8e8; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+        .data-section h2 { margin-top: 0; color: #b3a016; }
+        #news-feed ul { list-style-type: none; padding: 0; }
+        #news-feed li { margin-bottom: 5px; }
+        #news-feed li a { text-decoration: none; color: #333; }
+        #news-feed li a:hover { text-decoration: underline; color: #b3a016; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Smart Gold Platform Dashboard</h1>
+
+        <div class="data-section">
+            <h2>Gold Price</h2>
+            <p id="gold-price-data">Loading gold price...</p>
+        </div>
+
+        <div class="data-section">
+            <h2>Forex Rates</h2>
+            <p id="forex-data">Loading forex data...</p>
+        </div>
+
+        <div class="data-section">
+            <h2>Economic News</h2>
+            <ul id="news-feed">Loading news...</ul>
+        </div>
+
+        <div class="data-section">
+            <h2>10-Year Treasury Yield</h2>
+            <p id="treasury-10y-data">Loading 10-Year yield...</p>
+        </div>
+    </div>
+
+    <script>
+        // Gold price data from fawazahmed0/currency-api
+        fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json')
+          .then(response => response.json())
+          .then(data => {
+            if (data.xau && data.xau.usd) {
+                document.getElementById('gold-price-data').innerText = `Gold Price (XAU/USD): ${data.xau.usd}`;
+            } else {
+                document.getElementById('gold-price-data').innerText = 'Gold Price: Data Not Available';
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching gold price:', error);
+            document.getElementById('gold-price-data').innerText = 'Gold Price: Error loading data.';
+          });
+
+        // Forex rates from frankfurter.app
+        fetch('https://api.frankfurter.app/latest?from=USD&to=EUR,JPY,GBP,CAD,SEK,CHF')
+          .then(response => response.json())
+          .then(data => {
+            if (data.rates) {
+                let forexHtml = 'Forex Rates (USD to): ';
+                for (const currency in data.rates) {
+                  forexHtml += `${currency}: ${data.rates[currency]} `;
+                }n                document.getElementById('forex-data').innerText = forexHtml;
+            } else {
+                document.getElementById('forex-data').innerText = 'Forex Rates: Data Not Available';
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching forex rates:', error);
+            document.getElementById('forex-data').innerText = 'Forex Rates: Error loading data.';
+          });
+
+        // Economic News RSS feed via rss2json.com - Updated to NYT Economy
+        fetch('https://api.rss2json.com/v1/api.json?rss_url=https://rss.nytimes.com/services/xml/rss/nyt/Economy.xml')
+          .then(response => response.json())
+          .then(data => {
+            const newsFeed = document.getElementById('news-feed');
+            newsFeed.innerHTML = ''; // Clear loading message
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(item => {
+                  const li = document.createElement('li');
+                  li.innerHTML = `<a href="${item.link}" target="_blank">${item.title}</a>`;
+                  newsFeed.appendChild(li);
+                });
+            } else {
+                newsFeed.innerHTML = '<li>No news items available.</li>';
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching news feed:', error);
+            document.getElementById('news-feed').innerHTML = '<li>Error loading news feed.</li>';
+          });
+
+        // 10-Year Treasury Yield from fiscaldata.treasury.gov
+        // Note: The specific 'Treasury Constant Maturity Series (10 Year)' is not directly available via this API.
+        // Displaying 'Data Not Available' if the expected filter does not yield data.
+        fetch('https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?fields=record_date,security_desc,avg_interest_rate_amt&filter=security_desc:eq:Treasury%20Constant%20Maturity%20Series%20(10%20Year)&sort=-record_date&page[number]=1&page[size]=1')
+          .then(response => response.json())
+          .then(data => {
+            if (data.data && data.data.length > 0) {
+              document.getElementById('treasury-10y-data').innerText = `10-Year Treasury Yield: ${data.data[0].avg_interest_rate_amt}%`;
+            } else {
+              // Explicitly state data not available based on our API inspection
+              document.getElementById('treasury-10y-data').innerText = '10-Year Treasury Yield: Data Not Available (specific series not found in API)';
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching 10-Year Treasury Yield:', error);
+            document.getElementById('treasury-10y-data').innerText = '10-Year Treasury Yield: Error loading data.';
+          });
+    </script>
+</body>
+</html>
